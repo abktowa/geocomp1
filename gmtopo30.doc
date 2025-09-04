@@ -1,0 +1,53 @@
+Global Multi-resolution Terrain Elevation Data 2010 (GMTED2010)
+Site: <http://topotools.cr.usgs.gov/gmted_viewer/>
+Contact: gmted2010@usgs.gov
+
+The U.S. Geological Survey (USGS) and the National Geospatial-Intelligence
+Agency (NGA) have collaborated on the development of a notably enhanced
+global elevation model named the Global Multi-resolution Terrain
+Elevation Data 2010 (GMTED2010) that replaces GTOPO30 as the elevation
+dataset of choice for global and continental scale applications. Since
+the time GTOPO30 was completed, the availability of higher-quality
+elevation data over large geographic areas has improved markedly. New
+data sources include global Digital Terrain Elevation Data (DTED®)
+from the Shuttle Radar Topography Mission (SRTM), Canadian elevation
+data, Spot 5 Reference3D data, and data from the Ice, Cloud, and land
+Elevation Satellite (ICESat). GMTED2010 provides a new level of detail in
+global topographic data. The GMTED2010 product suite contains seven new
+raster elevation products for each of the 30-, 15-, and 7.5-arc-second
+spatial resolutions and incorporates the current best available global
+elevation data. The new elevation products have been produced using the
+following aggregation methods: minimum elevation, maximum elevation, mean
+elevation, median elevation, standard deviation of elevation, systematic
+subsample, and breakline emphasis. Metadata have also been produced to
+identify the source and attributes of all the input elevation data used
+to derive the output products. Many of these products will be suitable
+for various regional continental-scale land cover mapping, extraction of
+drainage features for hydrologic modeling, and geometric and radiometric
+correction of medium and coarse resolution satellite image data.
+
+The global aggregated vertical accuracy of GMTED2010 can be summarized in
+terms of the resolution and Root Mean Square Error (RMSE) of the products
+with respect to a global set of control points (estimated global accuracy
+of 6 m RMSE) provided by NGA. At 30 arc-seconds, the GMTED2010 RMSE range
+is between 25 and 42 meters; at 15 arc-seconds, the RMSE range is between
+29 and 32 meters; and at 7.5 arc-seconds, the RMSE range is between 26 and
+30 meters. GMTED2010 is a major improvement in consistency and vertical
+accuracy over GTOPO30, which has a 66 m RMSE globally compared to the
+same NGA control points. In areas where new sources of higher resolution
+data were available, the GMTED2010 products are substantially better
+than the aggregated global statistics; however, large areas still exist,
+particularly above 60 degrees North latitude that lack good elevation
+data. As new data become available, especially in areas that have poor
+coverage in the current model, it is hoped that new versions of GMTED2010
+might be generated and thus gradually improve the global model.
+
+	*	*	*
+
+GMTOPO30 is my processed version of the GMTED2010 30" mean-elevation
+dataset.  The original is a monolithic DEM in the proprietary (and
+horrible) ESRI Arc/Info Grid format, so I have broken it up into the
+same tiles as used by GTOPO30, formatted a plain 16-bit integer rasters,
+making it a drop-in replacement for GTOPO30.
+
+$Id: gmtopo30.doc,v 1.1 2015/01/27 19:37:45 ian Exp $
