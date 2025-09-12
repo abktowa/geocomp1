@@ -4,6 +4,16 @@ import numpy as np
 import sys
 from pathlib import Path
 
+global xs, ys, sorted_vals
+
+mountain_ranges = []
+prominences = []
+
+def getProm(peak, col_height):  #peak represents the second highest peak in a NEW mountain range, made by the combination of two smaller mountain ranges.
+    global xs, ys, sorted_vals
+    peak
+
+
 def load_dem(path, width, height, endian="<"):
     """
     Load raw 16-bit signed integers into a (H,W) array.
@@ -61,6 +71,7 @@ def local_maxima_8(arr):
     return peaks
 
 def main():
+    global xs, ys, sorted_vals
     ap = argparse.ArgumentParser(description="Read and inspect a raw 16-bit DEM tile.")
     ap.add_argument("binfile", type=str)
     ap.add_argument("--width",  type=int, required=True)
@@ -88,9 +99,9 @@ def main():
         # Take top 10 peaks by elevation
         if ys.size > 0:
             vals = arr[ys, xs]
-            top_idx = np.argsort(vals)[-10:][::-1]
-            print("\nTop 10 local peaks (y, x, elevation):")
-            for i in top_idx:
+            sorted_vals = np.argsort(vals)[0:][::-1]
+            print("\nTop 1000 local peaks (y, x, elevation):")
+            for i in sorted_vals[0:1000]:
                 y, x, h = int(ys[i]), int(xs[i]), int(vals[i])
                 print(f"  ({y}, {x}) -> {h}")
         else:
