@@ -1,18 +1,63 @@
 #input = dem grid of 6000 x 4800
 #output = list of 100 peaks (prominence, peak_x, peak_y, peak_height, col_x, col_y, col_height)
 
-# set up
-cells = []
-for y in 0..H-1:
-    for x in 0..W-1:
-        cells.append( (grid[y][x], x, y) )
+# Simplifies 2D coordinates from DEM grid to 1D index
+def simplify(x, y, W):
+    return y * W + x
 
-sort cells by height DESCENDING
+# Array to check surrounding cells
+neighbors = [(-1,-1), (-1,0), (-1,1), (0,-1), (0,1), (1,-1), (1,0), (1,1)]
 
-DSU = new UnionFind(H * W)
-active[H][W] = all False
-results = []
+# Container for coordinates and elevation of each peak
+class Peak:
+    def __init__(self, x, y, height):
+        self.x = x
+        self.y = y
+        self.height + height
 
+# Union-Find Data Structure
+class UniFi:
+    # Sets up DSU, each cell is its own island
+    def __init__(self, n):
+        self.parent = list(range(n)) # Each cell is own parent
+        self.rank = [0] * n # Keep trees balanced when merging, attaches shorter tree to taller one
+        self.peak = [None] * n # Stores highest point for each mountain
+
+    # Finds mountain each cell belongs to
+    def find(self, x):
+        if self.parent[x] != x:
+            self.parent[x] = self.find(self.parent[x])  # path compression
+        return self.parent[x]
+    
+    # Creates a set for a new cell
+    def make_set(self, x, peak):
+        self.parent[x] = x
+        self.rank[x] = 0
+        self.peak[x] = peak
+
+    # Combines two cells/islands when they "touch", use rank to decide which one is superior
+    def union(self, x, y):
+        rx, ry = self.find(x), self.find(y)
+        if rx == ry:
+            return rx
+
+        # Union by rank
+        if self.rank[rx] < self.rank[ry]:
+            rx, ry = ry, rx
+        elif self.rank[rx] == self.rank[ry]:
+            self.rank[rx] += 1
+
+        self.parent[ry] = rx
+
+        # Update peak for the merged set
+        peak_rx = self.peak[rx]
+        peak_ry = self.peak[ry]
+        if peak_ry and (not peak_rx or peak_ry.height > peak_rx.height):
+            self.peak[rx] = peak_ry
+
+        return rx
+
+# Algorithm
 # sweeping line from high to low 
 for (height, x, y) in cells:
 
@@ -63,8 +108,8 @@ results.append( (global_peak.height,
                  global_peak.x,
                  global_peak.y,
                  global_peak.height,
-                 NA, NA, NA) )
+                 None, None, None) )
 
-# sort and then outpu
+# sort and then output
 sort results by prominence DESC
 return top 100
