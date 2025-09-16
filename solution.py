@@ -4,7 +4,7 @@ import sys
 
 #input = dem grid of 6000 x 4800
 #output = list of 100 peaks (prominence, peak_x, peak_y, peak_height, col_x, col_y, col_height)
-global mountain_ranges
+global mountain_ranges, active_cells
 prominences = []
 
 
@@ -14,28 +14,61 @@ def build_peaks(array, W, H):
     for i in range(W):
         for j in range(H):
             try:
-                mountain_ranges.make_set((W * j) + i, Peak(i,j, array[i][j]))
+                mountain_ranges.make_set((W * j) + i, Peak(i,j, W, array[i][j]))
             except:
                 print("Failure at " + str(i) + "," + str(j))
 
 
-# Array to check surrounding cells
-neighbors = [(-1,-1), (-1,0), (-1,1), (0,-1), (0,1), (1,-1), (1,0), (1,1)]
+def convert_to_1d(x, y, w):
+    return (y*w) + x
+
+def check_neighbors(start_cell, grid_width, grid_height):
+    global mountain_ranges, active_cells
+    # Array to check surrounding cells
+    neighbors = [(-1,-1), (-1,0), (-1,1), (0,-1), (0,1), (1,-1), (1,0), (1,1)]
+    hits = []
+    for coordinates in neighbors:
+        if not ((start_cell.x == 0 and neighbors[coordinates][0] == -1) or (start_cell.x == (grid_width - 1) and neighbors[coordinates][0] == 1) or (start_cell.y == 0 and neighbors[coordinates][1] == -1) or (start_cell.y == (grid_height - 1) and neighbors[coordinates][1] == 1)):
+            if(active_cells[start_cell.x + neighbors[coordinates][0]][start_cell.y + neighbors[coordinates][1]] == True):
+                hits.append(convert_to_1d(start_cell.x + neighbors[coordinates][0], start_cell.y + neighbors[coordinates][1], grid_width))
+
+    if len(hits) > 0:
+        #Only one mountain of either equal or greater height detected. Combine those mountain ranges in UniFi
+        if len(hits) == 1:
+            mountain_ranges.union(start_cell.set_index, hits[0], None)
+        #If more than one mountain fulfills that role, that means this cell is a col, for at least 2 separate mountain ranges.  First, we unionize each surrounding mountain, then add in the col last.
+        if len(hits) >= 2:
+            new_mountain = None
+            new_mountain = mountain_ranges.union(hits[0],hits[1], start_cell)
+            for i in range(len(hits) - 1):
+                if new_mountain == None:
+                    if mountain_ranges.find(hits[i]) != mountain_ranges.find(hits[i+1]):
+                        new_mountain = mountain_ranges.union(hits[i],hits[i+1], start_cell)
+                else:
+                    if mountain_ranges.find(new_mountain) != mountain_ranges.find(hits[i+1]):
+                        new_mountain = mountain_ranges.union(new_mountain,hits[i+1], start_cell)
+            mountain_ranges.union(new_mountain, start_cell, None)
+
 
 # Container for coordinates and elevation of each peak
 class Peak:
-    def __init__(self, x, y, height):
+    def __init__(self, x, y, width, height):
         self.x = x
         self.y = y
+        self.set_index = convert_to_1d(x, y, width)
         self.height = height
+
+
 
 # Union-Find Data Structure
 class UniFi:
     # Sets up DSU, each cell is its own island
     def __init__(self, n):
+        self.size = n
         self.parent = list(range(n)) # Each cell is own parent
         self.rank = [0] * n # Keep trees balanced when merging, attaches shorter tree to taller one
-        self.peak = [None] * n # Stores highest point for each mountain
+        self.peak = [Peak(-1,-1,-1,-1)] * n # Stores highest point for each mountain
+        self.prominences = {}
 
     # Finds mountain each cell belongs to
     def find(self, x):
@@ -50,7 +83,7 @@ class UniFi:
         self.peak[x] = peak
 
     # Combines two cells/islands when they "touch", use rank to decide which one is superior
-    def union(self, x, y):
+    def union(self, x, y, col):
         rx, ry = self.find(x), self.find(y)
         if rx == ry:
             return rx
@@ -67,67 +100,16 @@ class UniFi:
         peak_rx = self.peak[rx]
         peak_ry = self.peak[ry]
         if peak_ry and (not peak_rx or peak_ry.height > peak_rx.height):
+            if peak_rx and col:
+                self.prominences[(peak_rx.x, peak_rx.y)] = peak_rx.height - col.height
+
             self.peak[rx] = peak_ry
 
+        elif peak_ry and col: 
+            self.prominences[(peak_ry.x, peak_ry.y)] = peak_ry.height - col.height
+
         return rx
-"""
-# Algorithm
-# sweeping line from high to low 
-for (height, x, y) in cells:
 
-    idx = simplify(x, y,6000)   # unique index for DSU
-    active[y][x] = True
-
-    # Create a new set for this cell
-    DSU.make_set(idx)
-    DSU.set_peak(idx, peak_x=x, peak_y=y, peak_height=height)
-
-    for each (nx, ny) in 8_neighbors(x, y):
-        if inside_grid(nx, ny) and active[ny][nx]:
-            n_idx = simplify(nx, ny, 6000)
-            root1 = DSU.find(idx)
-            root2 = DSU.find(n_idx)
-
-            if root1 != root2:
-                # Each component knows its highest peak
-                peak1 = DSU.peak[root1]
-                peak2 = DSU.peak[root2]
-
-                if peak1.height > peak2.height:
-                    higher, lower = root1, root2
-                else:
-                    higher, lower = root2, root1
-
-                # Col height is current sweep elevation
-                col_height = height
-
-                # Prominence of the lower peak
-                prominence = DSU.peak[lower].height - col_height
-
-                record = (prominence,
-                          DSU.peak[lower].x,
-                          DSU.peak[lower].y,
-                          DSU.peak[lower].height,
-                          x, y, col_height)
-
-                results.append(record)
-
-                DSU.union(higher, lower)
-
-# parse tallest peak
-# After all unions, the highest peak never got merged.
-# Its prominence is simply its height, col info is N/A.
-global_peak = DSU.peak[ DSU.find(any_active_idx) ]
-results.append( (global_peak.height,
-                 global_peak.x,
-                 global_peak.y,
-                 global_peak.height,
-                 None, None, None) )
-
-# sort and then output
-sort results by prominence DESC
-return top 100
-"""
 
 def load_dem(path, width, height, endian="<"):
     """
@@ -139,7 +121,7 @@ def load_dem(path, width, height, endian="<"):
     data = np.fromfile(path, dtype=dtype, count=n)
     if data.size != n:
         raise ValueError(f"Expected {n} samples, got {data.size}. Check width/height.")
-    return data.reshape(height, width)
+    return data.reshape(width, height)
 
 def local_maxima_8(arr):
     """
@@ -166,7 +148,8 @@ def local_maxima_8(arr):
 
 
 def main():
-    global xs, ys, sorted_vals, mountain_ranges
+    global xs, ys, sorted_vals, mountain_ranges, active_cells
+    active_cells = []
     ap = argparse.ArgumentParser(description="Read and inspect a raw 16-bit DEM tile.")
     ap.add_argument("binfile", type=str)
     ap.add_argument("--width",  type=int, required=True)
@@ -181,21 +164,38 @@ def main():
 
     arr = load_dem(args.binfile, args.width, args.height, endian=args.endian)
     mountain_ranges = UniFi(args.width * args.height)
+    print("Setting up peaks")
     build_peaks(arr, args.width, args.height)
 
-    if args.list_peaks:
-        peaks_mask = local_maxima_8(arr)
-        ys, xs = np.where(peaks_mask)
-        # Take top 10 peaks by elevation
-        if ys.size > 0:
-            vals = arr[ys, xs]
-            sorted_vals = np.argsort(vals)[0:][::-1]
-            print("\nTop 1000 local peaks (y, x, elevation):")
-            for i in sorted_vals:
-                y, x, h = int(ys[i]), int(xs[i]), int(vals[i])
-                print(f"  ({y}, {x}) -> {h}")
-        else:
-            print("No local maxima found (unexpected).")
+    #Make cell block to track if a given cell has been activated or not, which will procedurally turned on as height decreases
+    for i in range(args.width):
+        if i % 100 == 0:
+            print("Now writing at x " + str(i))
+        active_cells.append([])
+        for j in range(args.height):
+            active_cells[i].append(False)
+
+    #Slowly 'lower the water' to reveal
+    for i in range(6500):
+        if i % 100 == 0:
+            print("Now checking at depth " + str(6500 - i))
+        height_req = 6500 - i
+        for j in range(mountain_ranges.size):
+            if mountain_ranges.peak[j].height >= height_req:
+                active_cells[mountain_ranges.peak[j].x][mountain_ranges.peak[j].y] = True
+                check_neighbors(mountain_ranges.peak[j], args.width, args.height)
+        
+    print("Now checking from sea level")
+    for j in range(mountain_ranges.size):
+        if (mountain_ranges.peak[mountain_ranges.find(j)].x, mountain_ranges.peak[mountain_ranges.find(j)].y) not in mountain_ranges.prominences and mountain_ranges.peak[mountain_ranges.find(j)].height > 0:
+            mountain_ranges.prominences[(mountain_ranges.peak[mountain_ranges.find(j)].x, mountain_ranges.peak[mountain_ranges.find(j)].y)] = mountain_ranges.peak[mountain_ranges.find(j)].height
+    
+
+    sorted_prominences = sorted(mountain_ranges.prominences.items(), key=lambda x: x[1], reverse=True)
+
+
+    for key, value in sorted_prominences[:100]:
+        print(f"{key}: {value}")
 
 if __name__ == "__main__":
     main()
