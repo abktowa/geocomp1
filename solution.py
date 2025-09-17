@@ -263,8 +263,9 @@ def main():
         (gpeak.height, gpeak.x, gpeak.y, gpeak.height, None, None, None)
     )
 
+    nonzero_records = [rec for rec in mountain_ranges.records if rec[0] > 0]
     # Sort and print top 100
-    top = sorted(mountain_ranges.records, key=lambda r: r[0], reverse=True)[:100]
+    top = sorted(nonzero_records, key=lambda r: r[0], reverse=True)[:100]
 
     print("Peaks by prominence:")
     print("  prom    row    col   elev   crow   ccol  celev")
