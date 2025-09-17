@@ -1,3 +1,15 @@
+"""
+########################################
+Program Name: Mountain Prominence Calculator
+Class: CSC615 Computational Geometry
+Program Authors: Aban Khan and Matthew Glennon
+Program Description: This program is a prominence calculator for geographical data, being able to convert bin file coordinates and heights to 
+a cell grid, and use a sweep-line algorithm to first sort the peaks by height, then slowly activate them from top to bottom.  As new points are revealed,
+the program checks surrounding cells to look for other mountain ranges, and union them together.  Upon hitting two mountain ranges at once in this way, we 
+calculate prominence for the mountain range with the smaller peak height, then union them together with the taller peak as their overall peak.  Finally,
+the program displays the top 100 prominences
+########################################
+"""
 import argparse
 import numpy as np
 import sys
@@ -18,38 +30,18 @@ def build_peaks(array, W, H):
             except:
                 print("Failure at " + str(x) + "," + str(y))
 
+
+#Method which can take a 2D coordinate, and transfer it to a 1D index
 def simplify_to_1d(x, y, w):
     return ( y * w ) + x
 
+
+#Checks to make sure if a coordinate is within a given grid or not
 def in_bounds(x, y, W, H):
     return 0 <= x < W and 0 <= y < H
 
-# def check_neighbors(start_cell, grid_width, grid_height):
-#     global mountain_ranges, active_cells
-#     # Array to check surrounding cells
-#     hits = []
-#     for coordinates in neighbors:
-#         if not ((start_cell.x == 0 and neighbors[coordinates][0] == -1) or (start_cell.x == (grid_width - 1) and neighbors[coordinates][0] == 1) or (start_cell.y == 0 and neighbors[coordinates][1] == -1) or (start_cell.y == (grid_height - 1) and neighbors[coordinates][1] == 1)):
-#             if(active_cells[start_cell.x + neighbors[coordinates][0]][start_cell.y + neighbors[coordinates][1]] == True):
-#                 hits.append(simplify_to_1d(start_cell.x + neighbors[coordinates][0], start_cell.y + neighbors[coordinates][1], grid_width))
 
-#     if len(hits) > 0:
-#         #Only one mountain of either equal or greater height detected. Combine those mountain ranges in UniFi
-#         if len(hits) == 1:
-#             mountain_ranges.union(start_cell.set_index, hits[0], None)
-#         #If more than one mountain fulfills that role, that means this cell is a col, for at least 2 separate mountain ranges.  First, we unionize each surrounding mountain, then add in the col last.
-#         if len(hits) >= 2:
-#             new_mountain = None
-#             new_mountain = mountain_ranges.union(hits[0],hits[1], start_cell)
-#             for i in range(len(hits) - 1):
-#                 if new_mountain == None:
-#                     if mountain_ranges.find(hits[i]) != mountain_ranges.find(hits[i+1]):
-#                         new_mountain = mountain_ranges.union(hits[i],hits[i+1], start_cell)
-#                 else:
-#                     if mountain_ranges.find(new_mountain) != mountain_ranges.find(hits[i+1]):
-#                         new_mountain = mountain_ranges.union(new_mountain,hits[i+1], start_cell)
-#             mountain_ranges.union(new_mountain, start_cell, None)
-
+#Method that checks surrounding neighbors to a given cell, in this case a newly activated cell within our sweep line algorithm, to see if there are other active mountain ranges in the surrounding 8 neighbors
 def check_neighbors(start_cell, W, H, current_height):
     global mountain_ranges, active_cells
 
@@ -94,6 +86,7 @@ def check_neighbors(start_cell, W, H, current_height):
 
     # Finally, attach the col cell's own component into the merged mountain
     mountain_ranges.union(merged_root, start_cell.set_index, None)
+
 
 # Container for coordinates and elevation of each peak
 class Peak:
@@ -165,6 +158,7 @@ class UniFi:
 
         return rx
 
+
 # Testing on differing data sets required using endian modifications, in-case of variation of data.
 def load_dem(path, width, height, endian="<"):
     dtype = np.dtype(endian + "i2")
@@ -173,6 +167,7 @@ def load_dem(path, width, height, endian="<"):
     if data.size != n:
         raise ValueError(f"Expected {n} samples, got {data.size}. Check width/height.")
     return data.reshape(height, width)
+
 
 # Detects neighborhood peaks. True = local maximum.
 def local_maxima_neighbor(arr):
@@ -192,10 +187,12 @@ def local_maxima_neighbor(arr):
     peaks = ~higher_neighbor
     return peaks
 
-
+#Main method
 def main():
     global xs, ys, sorted_vals, mountain_ranges, active_cells
     active_cells = []
+    
+    #First collect args variables
     ap = argparse.ArgumentParser(description="Read and inspect DEM tile.")
     ap.add_argument("binfile", type=str)
     ap.add_argument("--width",  type=int, required=True)
@@ -208,31 +205,15 @@ def main():
                     help="Detect local maxima and print top 10 by elevation.")
     args = ap.parse_args()
 
+    #Load in our data, set it up as a UniFi variable called mountain_ranges
     arr = load_dem(args.binfile, args.width, args.height, endian=args.endian)
     mountain_ranges = UniFi(args.width * args.height)
     print("Setting up peaks")
     build_peaks(arr, args.width, args.height)
 
-    #Make cell block to track if a given cell has been activated or not, which will procedurally turned on as height decreases
-    # for i in range(args.width):
-        # if i % 100 == 0:
-            # print("Now writing at x " + str(i))
-        # active_cells.append([])
-        # for j in range(args.height):
-            # active_cells[i].append(False)
-
-    #Slowly 'lower the water' to reveal
-    # for i in range(6500):
-        # if i % 100 == 0:
-            # print("Now checking at depth " + str(6500 - i))
-        # height_req = 6500 - i
-        # for j in range(mountain_ranges.size):
-            # if mountain_ranges.peak[j].height >= height_req:
-                # active_cells[mountain_ranges.peak[j].x][mountain_ranges.peak[j].y] = True
-                # check_neighbors(mountain_ranges.peak[j], args.width, args.height)
-        
     H, W = args.height, args.width
 
+    #Set up our active cells, to be used when checking neighbors
     cells = []
     for y in range(H):
         for x in range(W):
@@ -245,7 +226,7 @@ def main():
 
     active_cells = [[False] * W for _ in range(H)]
 
-    # (MINE)SWEEP(ER), ONE CELL AT A TIME.
+    # (MINE)SWEEP(ER), ONE CELL AT A TIME.  This joke was brought by Aban, thank you Aban.
     i = 0
     while i < len(cells):
         h = cells[i][0]
