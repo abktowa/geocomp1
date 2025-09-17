@@ -3,11 +3,13 @@
 Program Name: Mountain Prominence Calculator
 Class: CSC615 Computational Geometry
 Program Authors: Aban Khan and Matthew Glennon
+Program Date: 17/09/2025
+
 Program Description: This program is a prominence calculator for geographical data, being able to convert bin file coordinates and heights to 
 a cell grid, and use a sweep-line algorithm to first sort the peaks by height, then slowly activate them from top to bottom.  As new points are revealed,
 the program checks surrounding cells to look for other mountain ranges, and union them together.  Upon hitting two mountain ranges at once in this way, we 
 calculate prominence for the mountain range with the smaller peak height, then union them together with the taller peak as their overall peak.  Finally,
-the program displays the top 100 prominences
+the program displays the top 100 prominences.
 ########################################
 """
 import argparse
@@ -262,6 +264,7 @@ def main():
     mountain_ranges.records.append(
         (gpeak.height, gpeak.x, gpeak.y, gpeak.height, None, None, None)
     )
+
 
     nonzero_records = [rec for rec in mountain_ranges.records if rec[0] > 0]
     # Sort and print top 100
