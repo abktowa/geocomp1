@@ -6,7 +6,6 @@ global mountain_ranges, active_cells
 prominences = []
 neighbors = [(-1,-1), (-1,0), (-1,1), (0,-1), (0,1), (1,-1), (1,0), (1,1)]
 
-
 # Simplifies 2D coordinates from DEM grid to 1D index
 def build_peaks(array, W, H):
     global mountain_ranges
@@ -18,7 +17,6 @@ def build_peaks(array, W, H):
                 mountain_ranges.make_set(idc, Peak(x, y, W, h))
             except:
                 print("Failure at " + str(x) + "," + str(y))
-
 
 def simplify_to_1d(x, y, w):
     return ( y * w ) + x
@@ -53,11 +51,6 @@ def in_bounds(x, y, W, H):
 #             mountain_ranges.union(new_mountain, start_cell, None)
 
 def check_neighbors(start_cell, W, H, current_height):
-    """
-    Given the just-activated cell's Peak (start_cell), union it with any
-    already-active neighboring components. If ≥2 distinct neighbor components
-    are present, this cell is a col at elevation = current_height.
-    """
     global mountain_ranges, active_cells
 
     x, y = start_cell.x, start_cell.y
